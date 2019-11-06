@@ -19,16 +19,16 @@ class Giphy(AgentCheck):
         # to get all process IDs matching a particular name
         pgrep_chrome, err, retcode = get_subprocess_output(
             ["pgrep", instance['process_name']], self.log, raise_on_empty_output=True)
-        uni_pids = pgrep_chrome.split('\n') # get cleaned version of response without new line commands
-        pids = []
-        for pid in uni_pids: # change encoding of each process ID from the bash unicode to utf8 strings
-            pids.append(pid.encode('utf8'))
-        
-        # for each ID found from `pgrep`, use `ps -p <pid> -o %mem` to collect mem usage for each and store
-        # them as keys for a dict. if given key is valid (longer than 1), assign the value, otherwise assign 0
+        uni_pids = pgrep_chrome.split('\n')
         mem_pcts = {}
-        for id in pids:
-            process_mem, err, retcode = get_subprocess_output(["ps", "-p", id, "-o", "%mem"], self.log, raise_on_empty_output=False)
+        for pid in uni_pids:
+            id = pid.encode('utf8') # change unicode from bash response to utf8
+            # for each id, use subprocess function to run `ps -p <pid> -o %mem` to get its
+            # percent of memory usage
+            process_mem, err, retcode = get_subprocess_output(
+                ["ps", "-p", id, "-o", "%mem"], self.log, raise_on_empty_output = False)
+            # if the key (pid) has a value (pct memory), add it to the mem_pcts dictionary
+            # with the value in utf8 encoding and stored as a float
             if len(process_mem.split('\n')) > 1:
                 mem_pcts.update({id:float(process_mem.split('\n')[1].encode('utf8'))})
             else:
@@ -36,6 +36,8 @@ class Giphy(AgentCheck):
 
         # sum the percentages for the mem usage for submission as the metric value
         total_mem_pct = sum(mem_pcts.values())
+        
         tags = mem_pcts.keys()
+        if '' in tags: tags.remove('')
         tags.append(instance['process_name'])
         self.gauge("{}.mem_pct".format(instance['process_name']), total_mem_pct, tags=tags)
