@@ -1,0 +1,10 @@
+init_config:
+
+instances:
+  - process_name: Google Chrome
+    min_collection_interval: 30
+    giphy_term: google master
+    
+  - process_name: Slack Helper
+    min_collection_interval: 40
+    giphy_term: slacker
