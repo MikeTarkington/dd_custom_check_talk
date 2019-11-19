@@ -114,35 +114,35 @@ https://app.datadoghq.com/account/settings#agent/mac
 
     - The agent gives us an `AgentCheck` class that we've imported so we're going to start by using that in order to gain access to the configurations carried in through the yaml file and fuctions for performing actions like metric or event submission.
 
-```python
-class Giphy(AgentCheck):
+	```python
+	class Giphy(AgentCheck):
 
-    @staticmethod
-    def giph_search(key, search_term):
-	offset = random.randint(0, 100)
-	url = 'http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit=1&rating=g&offset={}'.format(search_term, key, offset)
-	r = requests.get(url)
-	json_r = json.loads(r.text)
-	return json_r['data'][0]['images']['original']['url']
+		@staticmethod
+		def giph_search(key, search_term):
+		offset = random.randint(0, 100)
+		url = 'http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit=1&rating=g&offset={}'.format(search_term, key, offset)
+		r = requests.get(url)
+		json_r = json.loads(r.text)
+		return json_r['data'][0]['images']['original']['url']
 
-    def check(self, instance):
-	print(instance)
-	print(self.init_config)
+		def check(self, instance):
+		print(instance)
+		print(self.init_config)
 
-	process_name = instance['process_name'] 
-	giph_url = self.giph_search(self.init_config['giphy_key'], instance['giphy_term'])
+		process_name = instance['process_name'] 
+		giph_url = self.giph_search(self.init_config['giphy_key'], instance['giphy_term'])
 
-	event_dict = {
-	    "timestamp": time.time(),
-	    "event_type": "Giph from {}".format(process_name),
-	    "api_key": self.init_config['dd_api_key'],
-	    "msg_title": "Giph from {}".format(process_name),
-	    "msg_text": "![{}]({})".format(process_name, giph_url),
-	    "tags": ["giphy_check", "process:{}".format(process_name)]
-	}
+		event_dict = {
+			"timestamp": time.time(),
+			"event_type": "Giph from {}".format(process_name),
+			"api_key": self.init_config['dd_api_key'],
+			"msg_title": "Giph from {}".format(process_name),
+			"msg_text": "![{}]({})".format(process_name, giph_url),
+			"tags": ["giphy_check", "process:{}".format(process_name)]
+		}
 
-	self.event(event_dict)
-```
+		self.event(event_dict)
+	```
 
 8. Now lets try to run this code before we go through and examine it more detail.  We can use the following command to run an individual check file through the agent as a mere test that won't actually submit data to Datadog.  This saves you from having to restart the agent and run the status/info command in order to debug your latest modifications to the check.  In Mac OS it looks like this but might have some variation depending on your system (documented [here](https://docs.datadoghq.com/developers/write_agent_check/?tab=agentv6#verifying-your-check)):
 
@@ -168,11 +168,7 @@ class Giphy(AgentCheck):
           min_collection_interval: 40
           giphy_term: slack master
     ```
-    - Now that we've made those config changes lets run our check test again to get a look at the "massive gains":
-
-    https://a.cl.ly/6quDlLkm
-    ![https://a.cl.ly/6quDlLkm](https://p-qKFgO2.t2.n0.cdn.getcloudapp.com/items/6quDlLkm/Image+2019-11-18+at+4.13.47+PM.png?v=8163677d730df1b4ff253ed009bf10a1)
-    
+    - Now that we've made those config changes lets run our check test again to get a look at the "massive gains": https://a.cl.ly/6quDlLkm
     - NOTE: After configuring the giphy events properly, you might still occasionally get an error like the one below when running the check verification test command.  I believe this is due to  API call limits from Giphy that will cause an error response.  This should not be a problem in the actual check at the collection interval we're using.
     https://a.cl.ly/NQue0ddP
     - Having made those changes, we have a working custom agent check that sends events to Datadog so we could restart our agent with the dog bone icon in the Mac system tray. Shortly after doing so, check the event stream for those events.
@@ -200,17 +196,17 @@ class Giphy(AgentCheck):
     - Those values are in turn used by the function to build the `url` variable necessary for making an accepted call to the Giphy API search endpoint.
     - This function calls for a single gif randomly selected from the results using the `randint()` and then parses the json response looking for the direct link URL attribute to return.  We then use that `giph_url` value in the `msg_text` string argument that we pass for events. Finally, we use the built in `AgentCheck` class function `self.event(event_dict)` to send the `event_dict` object info to DD.
 
-```python
-	event_dict = {
-		"timestamp": time.time(),
-		"event_type": "Giph from {}".format(process_name),
-		"api_key": self.init_config['dd_api_key'],
-		"msg_title": "Giph from {}".format(process_name),
-		"msg_text": "![{}]({})".format(process_name, giph_url),
-		"tags": ["giphy_check", "process:{}".format(process_name)]
-	}
-	self.event(event_dict)
-```
+	```python
+		event_dict = {
+			"timestamp": time.time(),
+			"event_type": "Giph from {}".format(process_name),
+			"api_key": self.init_config['dd_api_key'],
+			"msg_title": "Giph from {}".format(process_name),
+			"msg_text": "![{}]({})".format(process_name, giph_url),
+			"tags": ["giphy_check", "process:{}".format(process_name)]
+		}
+		self.event(event_dict)
+	```
 
 10. Having covered an example of event submission and using an API within a check, lets now take a look at submitting metrics and additionally, a metric that is derived from command line capabilities on the system rather than just python itself.  Note the this example should reinfoce some of the possiblities we should consider for doing a variety of things like making metrics out of database calls by entering its respective shell and tracking the response to queries, or perhaps other levels of infrastructure in tracking results of thing like network activity or Docker/Kube commands. The general theme is that if Datadog doesn't already do it for our customers, there's a reasonable chance there's a way to get it done via custom agent check.
 
@@ -277,3 +273,5 @@ class Giphy(AgentCheck):
     - Restart the agent and begin looking for your custom metrics with metric explorer or a dashboard
     - Look at metric summary for your `Google_Chrome.mem_pct` metric and notice the number of "distinct metrics" and total tag count for the metric (this will vary depending on how many tabs/extensions running and how many different processes there have been).  It's valuable to recognize this as one potential way a customer could apply tags in a fashion that causes high cardinality and potentially unqueryable metrics if they looped through thousands of PIDs for example, submitted the metric from multiple hosts, etc, these could have multiplicative effects on the number of distinct metrics/unique timeseries as we have to enable them to query based on every possible tag combination.
     ![https://a.cl.ly/OAuxXq9W](https://p-qKFgO2.t2.n0.cdn.getcloudapp.com/items/OAuxXq9W/Image+2019-11-18+at+7.52.55+PM.png?v=1feb2b666f777b07f76fd671cdeeca2b)
+	- With the data flowing, create cool dashboards like [this](https://p.datadoghq.com/sb/42e274ab6-d0a21352c4df052329bf998bafbde51c):
+	![https://a.cl.ly/xQuv2L6Y](https://p-qKFgO2.t2.n0.cdn.getcloudapp.com/items/xQuv2L6Y/Image+2019-11-18+at+8.09.51+PM.png?v=3fc21425f240c09fe3a737108249a500)
