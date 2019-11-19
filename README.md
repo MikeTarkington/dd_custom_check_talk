@@ -8,7 +8,7 @@
 
 - Checks are just code that is run by the agent and can do pretty much anything the programmer wants within the permissions granted to the agent
 
-- Every check needs to have a corresponding yaml file for configuration
+- Every check needs to have a corresponding yaml file for configuration and every yaml needs to have at least one instance in it
 
 - Default frequency for check runs is 15 seconds but this can be adjusted to a longer time frame by setting a higher number of seconds for the `min_collection_interval: <int>`.  This can be used to control the frequency of events/metric points sent to the platform
 
@@ -21,7 +21,7 @@ https://datadog-checks-base.readthedocs.io/en/latest/datadog_checks.checks.html#
 
 <h3>Getting Started - Practice Check</h3>
 
-1. Install/update the Datadog agent (for our exercise please install the Mac agent locally as we will use the browser GUI for convenience)
+1. Install/update the Datadog agent (for our exercise please install the Mac agent locally as we will use the browser GUI for convenience and certain commands used expect Unix/Mac)
 https://app.datadoghq.com/account/settings#agent/mac
 
 2. Go to the Giphy API docs quick start guide:
@@ -105,44 +105,44 @@ https://app.datadoghq.com/account/settings#agent/mac
     - `giphy.test` is a string argument for how we've decided to name this metric
     - The `1` is just a hard coded value that will be submitted for the test but normally that would be a variable value
     - The third argument is just an array of tags we want added to this metric. Typically the keys/values would be some interpolated variable from the code logic rather than a hard coded value.  If handled irresponsibly, this can cause issues with high tag cardinality
-    - restart the agent and check status to see if the check ran
-        - in mac one can run `datadog-agent check giphy` to run that check exclusively, `datadog-agent status` or check the GUI via the dog bone icon from system tray
-        - for good measure, check your personal DD account to get something like this in metric explorer/summary https://share.getcloudapp.com/kpud8l0K
+    - Restart the agent and check status to see if the check ran
+        - In Mac one can run `datadog-agent check giphy` to run that check exclusively, `datadog-agent status` or check the GUI via the dog bone icon from system tray
+        - For good measure, check your personal DD account to get something like this in metric explorer/summary https://share.getcloudapp.com/kpud8l0K
         https://share.getcloudapp.com/4gu7rRDd
 
 7. Having verified the fundamentals are in place, start building out more code in the check:
 
     - The agent gives us an `AgentCheck` class that we've imported so we're going to start by using that in order to gain access to the configurations carried in through the yaml file and fuctions for performing actions like metric or event submission.
 
-    ```python
-        class Giphy(AgentCheck):
+```python
+class Giphy(AgentCheck):
 
-            @staticmethod
-            def giph_search(key, search_term):
-                offset = random.randint(0, 100)
-                url = 'http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit=1&rating=g&offset={}'.format(search_term, key, offset)
-                r = requests.get(url)
-                json_r = json.loads(r.text)
-                return json_r['data'][0]['images']['original']['url']
+    @staticmethod
+    def giph_search(key, search_term):
+	offset = random.randint(0, 100)
+	url = 'http://api.giphy.com/v1/gifs/search?q={}&api_key={}&limit=1&rating=g&offset={}'.format(search_term, key, offset)
+	r = requests.get(url)
+	json_r = json.loads(r.text)
+	return json_r['data'][0]['images']['original']['url']
 
-            def check(self, instance):
-                print(instance)
-                print(self.init_config)
+    def check(self, instance):
+	print(instance)
+	print(self.init_config)
 
-                process_name = instance['process_name'] 
-                giph_url = self.giph_search(self.init_config['giphy_key'], instance['giphy_term'])
+	process_name = instance['process_name'] 
+	giph_url = self.giph_search(self.init_config['giphy_key'], instance['giphy_term'])
 
-                event_dict = {
-                    "timestamp": time.time(),
-                    "event_type": "Giph from {}".format(process_name),
-                    "api_key": self.init_config['dd_api_key'],
-                    "msg_title": "Giph from {}".format(process_name),
-                    "msg_text": "![{}]({})".format(process_name, giph_url),
-                    "tags": ["giphy_check", "process:{}".format(process_name)]
-                }
+	event_dict = {
+	    "timestamp": time.time(),
+	    "event_type": "Giph from {}".format(process_name),
+	    "api_key": self.init_config['dd_api_key'],
+	    "msg_title": "Giph from {}".format(process_name),
+	    "msg_text": "![{}]({})".format(process_name, giph_url),
+	    "tags": ["giphy_check", "process:{}".format(process_name)]
+	}
 
-                self.event(event_dict)
-    ```
+	self.event(event_dict)
+```
 
 8. Now lets try to run this code before we go through and examine it more detail.  We can use the following command to run an individual check file through the agent as a mere test that won't actually submit data to Datadog.  This saves you from having to restart the agent and run the status/info command in order to debug your latest modifications to the check.  In Mac OS it looks like this but might have some variation depending on your system (documented [here](https://docs.datadoghq.com/developers/write_agent_check/?tab=agentv6#verifying-your-check)):
 
@@ -173,7 +173,8 @@ https://app.datadoghq.com/account/settings#agent/mac
     ![https://a.cl.ly/6quDlLkm](https://p-qKFgO2.t2.n0.cdn.getcloudapp.com/items/6quDlLkm/Image+2019-11-18+at+4.13.47+PM.png?v=8163677d730df1b4ff253ed009bf10a1)
     - NOTE: After configuring the giphy events properly, you might still occasionally get an error like the one below when running the check verification test command.  I believe this is due to  API call limits from Giphy that will cause an error response.  This should not be a problem in the actual check at the collection interval we're using.
     https://a.cl.ly/NQue0ddP
-    - Having made those changes, we have a working custom agent check that sends events to Datadog so we could restart our agent with the dog bone icon in the Mac system tray. Shortly after doing so, you could check your event stream for those events
+    - Having made those changes, we have a working custom agent check that sends events to Datadog so we could restart our agent with the dog bone icon in the Mac system tray. Shortly after doing so, check the event stream for those events.
+    
     ![https://a.cl.ly/JruwR7gA](https://p-qKFgO2.t2.n0.cdn.getcloudapp.com/items/JruwR7gA/Image+2019-11-18+at+4.22.25+PM.png?v=04c58580e66dd4044e399e7accd9681f)
 
 9. With a working custom check that submits events using the result of data from an external API call, we reveal a power in the agent that rivals that of our crawler based integrations. They use third party APIs to schedule data collection and transmission to DD on our customers behalf.  This check has a schedule based on agent collection interval and can do pretty much anything python can do.  Lets break down the code so far block by block.
@@ -196,19 +197,18 @@ https://app.datadoghq.com/account/settings#agent/mac
     ```
     - Those values are in turn used by the function to build the `url` variable necessary for making an accepted call to the Giphy API search endpoint.
     - This function calls for a single gif randomly selected from the results using the `randint()` and then parses the json response looking for the direct link URL attribute to return.  We then use that `giph_url` value in the `msg_text` string argument that we pass for events. Finally, we use the built in `AgentCheck` class function `self.event(event_dict)` to send the `event_dict` object info to DD.
-    
-    ```python
-    		event_dict = {
-			"timestamp": time.time(),
-			"event_type": "Giph from {}".format(process_name),
-			"api_key": self.init_config['dd_api_key'],
-			"msg_title": "Giph from {}".format(process_name),
-			"msg_text": "![{}]({})".format(process_name, giph_url),
-			"tags": ["giphy_check", "process:{}".format(process_name)]
-		}
-​
-		self.event(event_dict)
-    ```
+
+```python
+	event_dict = {
+		"timestamp": time.time(),
+		"event_type": "Giph from {}".format(process_name),
+		"api_key": self.init_config['dd_api_key'],
+		"msg_title": "Giph from {}".format(process_name),
+		"msg_text": "![{}]({})".format(process_name, giph_url),
+		"tags": ["giphy_check", "process:{}".format(process_name)]
+	}
+	self.event(event_dict)
+```
 
 10. Having covered an example of event submission and using an API within a check, lets now take a look at submitting metrics and additionally, a metric that is derived from command line capabilities on the system rather than just python itself.  Note the this example should reinfoce some of the possiblities we should consider for doing a variety of things like making metrics out of database calls by entering its respective shell and tracking the response to queries, or perhaps other levels of infrastructure in tracking results of thing like network activity or Docker/Kube commands. The general theme is that if Datadog doesn't already do it for our customers, there's a reasonable chance there's a way to get it done via custom agent check.
 
