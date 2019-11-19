@@ -170,7 +170,9 @@ class Giphy(AgentCheck):
     ```
     - Now that we've made those config changes lets run our check test again to get a look at the "massive gains":
 
+    https://a.cl.ly/6quDlLkm
     ![https://a.cl.ly/6quDlLkm](https://p-qKFgO2.t2.n0.cdn.getcloudapp.com/items/6quDlLkm/Image+2019-11-18+at+4.13.47+PM.png?v=8163677d730df1b4ff253ed009bf10a1)
+    
     - NOTE: After configuring the giphy events properly, you might still occasionally get an error like the one below when running the check verification test command.  I believe this is due to  API call limits from Giphy that will cause an error response.  This should not be a problem in the actual check at the collection interval we're using.
     https://a.cl.ly/NQue0ddP
     - Having made those changes, we have a working custom agent check that sends events to Datadog so we could restart our agent with the dog bone icon in the Mac system tray. Shortly after doing so, check the event stream for those events.
