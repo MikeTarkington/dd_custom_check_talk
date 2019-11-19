@@ -169,6 +169,7 @@ https://app.datadoghq.com/account/settings#agent/mac
           giphy_term: slack master
     ```
     - Now that we've made those config changes lets run our check test again to get a look at the "massive gains":
+
     ![https://a.cl.ly/6quDlLkm](https://p-qKFgO2.t2.n0.cdn.getcloudapp.com/items/6quDlLkm/Image+2019-11-18+at+4.13.47+PM.png?v=8163677d730df1b4ff253ed009bf10a1)
     - NOTE: After configuring the giphy events properly, you might still occasionally get an error like the one below when running the check verification test command.  I believe this is due to  API call limits from Giphy that will cause an error response.  This should not be a problem in the actual check at the collection interval we're using.
     https://a.cl.ly/NQue0ddP
@@ -195,6 +196,7 @@ https://app.datadoghq.com/account/settings#agent/mac
     ```
     - Those values are in turn used by the function to build the `url` variable necessary for making an accepted call to the Giphy API search endpoint.
     - This function calls for a single gif randomly selected from the results using the `randint()` and then parses the json response looking for the direct link URL attribute to return.  We then use that `giph_url` value in the `msg_text` string argument that we pass for events. Finally, we use the built in `AgentCheck` class function `self.event(event_dict)` to send the `event_dict` object info to DD.
+    
     ```python
     		event_dict = {
 			"timestamp": time.time(),
@@ -273,6 +275,3 @@ https://app.datadoghq.com/account/settings#agent/mac
     - Restart the agent and begin looking for your custom metrics with metric explorer or a dashboard
     - Look at metric summary for your `Google_Chrome.mem_pct` metric and notice the number of "distinct metrics" and total tag count for the metric (this will vary depending on how many tabs/extensions running and how many different processes there have been).  It's valuable to recognize this as one potential way a customer could apply tags in a fashion that causes high cardinality and potentially unqueryable metrics if they looped through thousands of PIDs for example, submitted the metric from multiple hosts, etc, these could have multiplicative effects on the number of distinct metrics/unique timeseries as we have to enable them to query based on every possible tag combination.
     ![https://a.cl.ly/OAuxXq9W](https://p-qKFgO2.t2.n0.cdn.getcloudapp.com/items/OAuxXq9W/Image+2019-11-18+at+7.52.55+PM.png?v=1feb2b666f777b07f76fd671cdeeca2b)
-    - Create a neat screenboard like [this one](https://p.datadoghq.com/sb/42e274ab6-d0a21352c4df052329bf998bafbde51c)!
-    ![https://a.cl.ly/xQuv2L6Y](https://p-qKFgO2.t2.n0.cdn.getcloudapp.com/items/xQuv2L6Y/Image+2019-11-18+at+8.09.51+PM.png?v=3fc21425f240c09fe3a737108249a500)
-    
